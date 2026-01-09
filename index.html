@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼豆图纸生成器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>拼豆图纸生成器</h1>
+            <p>上传图片，调整参数，生成属于你的拼豆图纸</p>
+        </header>
+
+        <main>
+            <!-- 左侧控制面板 -->
+            <aside class="control-panel">
+                <!-- 文件上传区域 -->
+                <section class="upload-section">
+                    <h2>1. 上传图片</h2>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <div class="upload-content">
+                            <svg class="upload-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                            </svg>
+                            <p>点击或拖拽图片到此处上传</p>
+                            <small>支持 JPG、PNG、GIF 等格式</small>
+                        </div>
+                    </div>
+                    <div class="image-preview" id="imagePreview" style="display: none;">
+                        <img id="previewImg" src="" alt="预览图">
+                        <button class="remove-btn" id="removeImg">移除图片</button>
+                    </div>
+                </section>
+
+                <!-- 参数调整区域 -->
+                <section class="params-section">
+                    <h2>2. 调整参数</h2>
+                    
+                    <div class="param-group">
+                        <label for="gridSize">网格大小:</label>
+                        <div class="param-controls">
+                            <input type="range" id="gridSize" min="10" max="100" value="30">
+                            <input type="number" id="gridSizeInput" min="10" max="100" value="30">
+                        </div>
+                    </div>
+
+                    <div class="param-group">
+                        <label for="scale">图片缩放:</label>
+                        <div class="param-controls">
+                            <input type="range" id="scale" min="0.1" max="2" step="0.1" value="1">
+                            <span id="scaleValue">1.0</span>x
+                        </div>
+                    </div>
+
+                    <div class="param-group">
+                        <label for="colorCount">颜色数量:</label>
+                        <div class="param-controls">
+                            <input type="range" id="colorCount" min="1" max="20" value="10">
+                            <span id="colorCountValue">10</span> 种
+                        </div>
+                    </div>
+
+                    <div class="param-group">
+                        <label for="brightness">亮度:</label>
+                        <div class="param-controls">
+                            <input type="range" id="brightness" min="-50" max="50" value="0">
+                            <span id="brightnessValue">0</span>
+                        </div>
+                    </div>
+
+                    <div class="param-group">
+                        <label for="contrast">对比度:</label>
+                        <div class="param-controls">
+                            <input type="range" id="contrast" min="-50" max="50" value="0">
+                            <span id="contrastValue">0</span>
+                        </div>
+                    </div>
+
+                    <button class="generate-btn" id="generateBtn" disabled>生成拼豆图纸</button>
+                </section>
+
+                <!-- 下载区域 -->
+                <section class="download-section" id="downloadSection" style="display: none;">
+                    <h2>3. 下载图纸</h2>
+                    
+                    <div class="param-group">
+                        <label for="downloadQuality">下载清晰度:</label>
+                        <div class="param-controls">
+                            <select id="downloadQuality">
+                                <option value="low">低 (适合快速预览)</option>
+                                <option value="medium" selected>中 (平衡质量和大小)</option>
+                                <option value="high">高 (适合打印)</option>
+                                <option value="ultra">超高 (最高质量)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="download-buttons">
+                        <button class="download-btn" id="downloadHtml">下载 HTML</button>
+                        <button class="download-btn" id="downloadPng">下载 PNG</button>
+                        <button class="download-btn" id="downloadJpg">下载 JPG</button>
+                        <button class="download-btn" id="downloadPdf">下载 PDF</button>
+                        <button class="download-btn" id="printMaterials">打印用料</button>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- 右侧预览和结果区域 -->
+            <div class="main-content">
+                <!-- 预览区域 -->
+                <section class="preview-section">
+                    <h2>预览</h2>
+                    <div class="preview-container">
+                        <div class="bead-grid-container" id="beadGridContainer">
+                            <div class="placeholder">
+                                <svg class="placeholder-icon" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                                </svg>
+                                <p>上传图片并点击生成按钮查看预览</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 结果统计区域 -->
+                <section class="stats-section" id="statsSection" style="display: none;">
+                    <h2>拼豆统计</h2>
+                    <div class="stats-container">
+                        <table class="bead-stats" id="beadStats">
+                            <thead>
+                                <tr>
+                                    <th>颜色</th>
+                                    <th>编号</th>
+                                    <th>名称</th>
+                                    <th>数量</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 统计数据将通过 JavaScript 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="total-stats">
+                        <p>总拼豆数量: <span id="totalBeads">0</span></p>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- 打印用料模态窗口 -->
+    <div id="materialsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>拼豆用料清单</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="materials-content">
+                    <h4>用料统计</h4>
+                    <table class="materials-table" id="materialsTable">
+                        <thead>
+                            <tr>
+                                <th>颜色</th>
+                                <th>编号</th>
+                                <th>名称</th>
+                                <th>数量</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 用料数据将通过 JavaScript 动态生成 -->
+                        </tbody>
+                    </table>
+                    <div class="materials-total">
+                        <p>总拼豆数量: <span id="materialsTotal">0</span></p>
+                    </div>
+                    <div class="materials-info">
+                        <p>生成时间: <span id="materialsTime"></span></p>
+                        <p>网格大小: <span id="materialsGridSize"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="print-btn" id="printBtn">打印用料清单</button>
+                <button class="close-btn" id="closeModalBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Canvas 用于图片处理 -->
+    <canvas id="imageCanvas" style="display: none;"></canvas>
+
+    <!-- 引入外部库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- 引入 JavaScript 文件 -->
+    <script src="bead-colors.js"></script>
+    <script src="bead-generator.js"></script>
+</body>
+</html>
