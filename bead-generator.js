@@ -279,9 +279,32 @@ class BeadGenerator {
         this.ctx.drawImage(this.uploadedImage, 0, 0, canvasWidth, canvasHeight);
         this.adjustImage(brightness, contrast);
         
-        // 计算网格参数 - 更精确的计算
-        const actualColumns = Math.min(gridSize, Math.max(10, Math.floor(canvasWidth / 2)));
-        const actualRows = Math.min(gridSize, Math.max(10, Math.floor(canvasHeight / 2)));
+        // 计算网格参数 - 支持多种宽高比例
+        // 根据图片原始比例计算合适的网格尺寸
+        const aspectRatio = canvasWidth / canvasHeight;
+        
+        // 计算基础网格大小
+        let actualColumns, actualRows;
+        
+        if (aspectRatio > 1) {
+            // 宽屏图片
+            actualColumns = Math.min(gridSize, Math.max(10, Math.floor(canvasWidth / 2)));
+            actualRows = Math.max(10, Math.floor(actualColumns / aspectRatio));
+        } else if (aspectRatio < 1) {
+            // 竖屏图片
+            actualRows = Math.min(gridSize, Math.max(10, Math.floor(canvasHeight / 2)));
+            actualColumns = Math.max(10, Math.floor(actualRows * aspectRatio));
+        } else {
+            // 正方形图片
+            actualColumns = Math.min(gridSize, Math.max(10, Math.floor(canvasWidth / 2)));
+            actualRows = actualColumns;
+        }
+        
+        // 确保至少有10x10的网格
+        actualColumns = Math.max(10, actualColumns);
+        actualRows = Math.max(10, actualRows);
+        
+        // 计算单元格大小
         const cellWidth = canvasWidth / actualColumns;
         const cellHeight = canvasHeight / actualRows;
         
