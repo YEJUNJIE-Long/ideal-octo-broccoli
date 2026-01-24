@@ -412,38 +412,52 @@ class BeadGenerator {
         const centerX = width / 2;
         const centerY = height / 2;
         
-        // 计算边缘强度图 - 用于边缘感知采样
-        const edgeStrength = this.calculateEdgeStrength(imageData);
-        
-        // 自适应窗口调整：根据边缘强度动态调整采样策略
-        for (let row = 0; row < height; row++) {
-            for (let col = 0; col < width; col++) {
-                // 计算当前像素到中心的距离
-                const distanceX = Math.abs(col - centerX);
-                const distanceY = Math.abs(row - centerY);
-                const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
-                
-                // 1. 高斯距离权重
-                const sigma = Math.sqrt(width * width + height * height) / 6;
-                const distanceWeight = Math.exp(-(distance * distance) / (2 * sigma * sigma));
-                
-                // 2. 边缘感知权重：边缘区域增加权重，提高边缘像素识别精度
-                const edgeWeight = 1 + (edgeStrength[row][col] * 0.5);
-                
-                // 3. 自适应窗口权重：根据边缘强度调整采样范围
-                const adaptiveWeight = this.calculateAdaptiveWeight(edgeStrength[row][col], distance, width, height);
-                
-                // 综合权重
-                const weight = distanceWeight * edgeWeight * adaptiveWeight;
-                
-                // 获取像素索引
-                const index = (row * width + col) * 4;
-                
-                // 累加颜色值（带权重）
-                r += data[index] * weight;
-                g += data[index + 1] * weight;
-                b += data[index + 2] * weight;
-                totalWeight += weight;
+        // 处理小尺寸单元格（特殊情况）
+        if (width < 3 || height < 3) {
+            // 对于小尺寸单元格，直接使用简单平均，不进行边缘检测
+            for (let row = 0; row < height; row++) {
+                for (let col = 0; col < width; col++) {
+                    const index = (row * width + col) * 4;
+                    r += data[index];
+                    g += data[index + 1];
+                    b += data[index + 2];
+                    totalWeight++;
+                }
+            }
+        } else {
+            // 计算边缘强度图 - 用于边缘感知采样
+            const edgeStrength = this.calculateEdgeStrength(imageData);
+            
+            // 自适应窗口调整：根据边缘强度动态调整采样策略
+            for (let row = 0; row < height; row++) {
+                for (let col = 0; col < width; col++) {
+                    // 计算当前像素到中心的距离
+                    const distanceX = Math.abs(col - centerX);
+                    const distanceY = Math.abs(row - centerY);
+                    const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+                    
+                    // 1. 高斯距离权重
+                    const sigma = Math.sqrt(width * width + height * height) / 6;
+                    const distanceWeight = Math.exp(-(distance * distance) / (2 * sigma * sigma));
+                    
+                    // 2. 边缘感知权重：边缘区域增加权重，提高边缘像素识别精度
+                    const edgeWeight = 1 + (edgeStrength[row][col] * 0.5);
+                    
+                    // 3. 自适应窗口权重：根据边缘强度调整采样范围
+                    const adaptiveWeight = this.calculateAdaptiveWeight(edgeStrength[row][col], distance, width, height);
+                    
+                    // 综合权重
+                    const weight = distanceWeight * edgeWeight * adaptiveWeight;
+                    
+                    // 获取像素索引
+                    const index = (row * width + col) * 4;
+                    
+                    // 累加颜色值（带权重）
+                    r += data[index] * weight;
+                    g += data[index + 1] * weight;
+                    b += data[index + 2] * weight;
+                    totalWeight += weight;
+                }
             }
         }
         
@@ -468,6 +482,12 @@ class BeadGenerator {
             for (let x = 0; x < width; x++) {
                 edgeStrength[y][x] = 0;
             }
+        }
+        
+        // 处理小尺寸图像（特殊情况）
+        if (width < 3 || height < 3) {
+            // 对于小尺寸图像，直接返回全零边缘强度
+            return edgeStrength;
         }
         
         // Sobel边缘检测计算边缘强度
