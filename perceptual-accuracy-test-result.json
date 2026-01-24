@@ -1,0 +1,9 @@
+{
+  "old_avg_distance": 14.702554386741305,
+  "new_avg_distance": 10.648156854343004,
+  "distance_improvement": 27.57614374856207,
+  "old_perfect_rate": 12.5,
+  "new_perfect_rate": 19.5,
+  "perfect_improvement": 7.0,
+  "passed": true
+}

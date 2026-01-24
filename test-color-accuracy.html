@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼豆颜色识别精度测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .test-results {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .accuracy-card {
+            flex: 1;
+            padding: 20px;
+            margin: 0 10px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .accuracy-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .old-accuracy {
+            color: #e74c3c;
+        }
+        .new-accuracy {
+            color: #27ae60;
+        }
+        .improvement {
+            color: #3498db;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .color-sample {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+        }
+        .color-info {
+            font-size: 14px;
+        }
+        .distance {
+            font-weight: bold;
+        }
+        .pass {
+            color: #27ae60;
+        }
+        .fail {
+            color: #e74c3c;
+        }
+        .test-image-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+        #testImage {
+            max-width: 100%;
+            max-height: 400px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>拼豆颜色识别精度测试</h1>
+        
+        <div class="test-results">
+            <div class="accuracy-card">
+                <h3>优化前准确率</h3>
+                <div class="accuracy-value old-accuracy" id="oldAccuracy">0%</div>
+                <div class="color-info">基于简单RGB距离匹配</div>
+            </div>
+            <div class="accuracy-card">
+                <h3>优化后准确率</h3>
+                <div class="accuracy-value new-accuracy" id="newAccuracy">0%</div>
+                <div class="color-info">基于LAB/CIEDE2000 + 边缘感知</div>
+            </div>
+            <div class="accuracy-card">
+                <h3>准确率提升</h3>
+                <div class="accuracy-value improvement" id="improvement">0%</div>
+                <div class="color-info">优化前后对比</div>
+            </div>
+        </div>
+        
+        <h2>颜色样本对比测试</h2>
+        <table id="testResultsTable">
+            <thead>
+                <tr>
+                    <th>测试样本</th>
+                    <th>原始RGB</th>
+                    <th>优化前匹配</th>
+                    <th>优化前距离</th>
+                    <th>优化后匹配</th>
+                    <th>优化后距离</th>
+                    <th>结果</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 测试结果将通过JavaScript动态生成 -->
+            </tbody>
+        </table>
+        
+        <div class="test-image-section">
+            <h2>图像测试</h2>
+            <div class="controls">
+                <input type="file" id="imageInput" accept="image/*">
+                <button onclick="testImageColorAccuracy()">测试图像</button>
+            </div>
+            <img id="testImage" alt="测试图像">
+            <div id="imageTestResult" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <!-- 引入颜色定义和匹配函数 -->
+    <script src="bead-colors.js"></script>
+    
+    <script>
+        // 测试颜色样本（20种常见颜色）
+        const testColors = [
+            { name: "纯黑", rgb: [0, 0, 0] },
+            { name: "深灰", rgb: [64, 64, 64] },
+            { name: "中灰", rgb: [128, 128, 128] },
+            { name: "浅灰", rgb: [192, 192, 192] },
+            { name: "纯白", rgb: [255, 255, 255] },
+            { name: "大红", rgb: [255, 0, 0] },
+            { name: "深红", rgb: [128, 0, 0] },
+            { name: "粉红", rgb: [255, 192, 203] },
+            { name: "橙色", rgb: [255, 165, 0] },
+            { name: "黄色", rgb: [255, 255, 0] },
+            { name: "柠檬黄", rgb: [255, 250, 205] },
+            { name: "纯绿", rgb: [0, 255, 0] },
+            { name: "深绿", rgb: [0, 128, 0] },
+            { name: "浅绿", rgb: [144, 238, 144] },
+            { name: "纯蓝", rgb: [0, 0, 255] },
+            { name: "深蓝", rgb: [0, 0, 128] },
+            { name: "浅蓝", rgb: [135, 206, 235] },
+            { name: "紫色", rgb: [128, 0, 128] },
+            { name: "棕色", rgb: [165, 42, 42] },
+            { name: "青色", rgb: [0, 255, 255] }
+        ];
+        
+        // 旧的颜色匹配函数（用于对比）
+        function oldFindNearestBeadColor(rgb) {
+            let minDistance = Infinity;
+            let nearestColor = BEAD_COLORS[0];
+            
+            for (const color of BEAD_COLORS) {
+                const distance = calculateColorDistance(rgb, color.rgb);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestColor = color;
+                }
+            }
+            
+            return { color: nearestColor, distance: minDistance };
+        }
+        
+        // 运行颜色精度测试
+        function runColorAccuracyTest() {
+            const tableBody = document.getElementById('testResultsTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            
+            let oldCorrect = 0;
+            let newCorrect = 0;
+            
+            testColors.forEach((testColor, index) => {
+                // 优化前匹配
+                const oldResult = oldFindNearestBeadColor(testColor.rgb);
+                
+                // 优化后匹配
+                const newResult = {
+                    color: findNearestBeadColor(testColor.rgb),
+                    distance: ciede2000(rgbToLab(testColor.rgb), rgbToLab(findNearestBeadColor(testColor.rgb).rgb))
+                };
+                
+                // 判断是否匹配正确（距离阈值：RGB<50，CIEDE2000<10）
+                const oldMatch = oldResult.distance < 50;
+                const newMatch = newResult.distance < 10;
+                
+                if (oldMatch) oldCorrect++;
+                if (newMatch) newCorrect++;
+                
+                // 创建测试结果行
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="color-sample" style="background-color: rgb(${testColor.rgb.join(',')});"></div>
+                        <div class="color-info">${testColor.name}</div>
+                    </td>
+                    <td class="color-info">rgb(${testColor.rgb.join(',')})</td>
+                    <td>
+                        <div class="color-sample" style="background-color: ${oldResult.color.hex};"></div>
+                        <div class="color-info">${oldResult.color.name}</div>
+                        <div class="color-info">${oldResult.color.id}</div>
+                    </td>
+                    <td class="distance">${oldResult.distance.toFixed(2)}</td>
+                    <td>
+                        <div class="color-sample" style="background-color: ${newResult.color.hex};"></div>
+                        <div class="color-info">${newResult.color.name}</div>
+                        <div class="color-info">${newResult.color.id}</div>
+                    </td>
+                    <td class="distance">${newResult.distance.toFixed(2)}</td>
+                    <td>
+                        <div class="${oldMatch ? 'pass' : 'fail'}">${oldMatch ? '✓' : '✗'}</div>
+                        <div class="${newMatch ? 'pass' : 'fail'}">${newMatch ? '✓' : '✗'}</div>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // 计算准确率
+            const oldAccuracy = (oldCorrect / testColors.length) * 100;
+            const newAccuracy = (newCorrect / testColors.length) * 100;
+            const improvement = newAccuracy - oldAccuracy;
+            
+            // 更新准确率显示
+            document.getElementById('oldAccuracy').textContent = `${oldAccuracy.toFixed(1)}%`;
+            document.getElementById('newAccuracy').textContent = `${newAccuracy.toFixed(1)}%`;
+            document.getElementById('improvement').textContent = `${improvement.toFixed(1)}%`;
+            
+            return { oldAccuracy, newAccuracy, improvement };
+        }
+        
+        // 图像测试功能
+        function testImageColorAccuracy() {
+            const fileInput = document.getElementById('imageInput');
+            const testImage = document.getElementById('testImage');
+            const testResult = document.getElementById('imageTestResult');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                testResult.innerHTML = '<div class="fail">请先选择测试图像！</div>';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                testImage.src = e.target.result;
+                testResult.innerHTML = '<div>正在分析图像，请稍候...</div>';
+                
+                testImage.onload = function() {
+                    // 创建Canvas进行图像分析
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = testImage.width;
+                    canvas.height = testImage.height;
+                    ctx.drawImage(testImage, 0, 0);
+                    
+                    // 采样200个随机像素点进行测试
+                    const sampleCount = 200;
+                    let oldCorrectPixels = 0;
+                    let newCorrectPixels = 0;
+                    
+                    for (let i = 0; i < sampleCount; i++) {
+                        const x = Math.floor(Math.random() * canvas.width);
+                        const y = Math.floor(Math.random() * canvas.height);
+                        const pixel = ctx.getImageData(x, y, 1, 1).data;
+                        const rgb = [pixel[0], pixel[1], pixel[2]];
+                        
+                        // 跳过透明像素
+                        if (pixel[3] < 200) continue;
+                        
+                        // 优化前匹配
+                        const oldResult = oldFindNearestBeadColor(rgb);
+                        
+                        // 优化后匹配
+                        const newResult = {
+                            color: findNearestBeadColor(rgb),
+                            distance: ciede2000(rgbToLab(rgb), rgbToLab(findNearestBeadColor(rgb).rgb))
+                        };
+                        
+                        if (oldResult.distance < 50) oldCorrectPixels++;
+                        if (newResult.distance < 10) newCorrectPixels++;
+                    }
+                    
+                    const oldPixelAccuracy = (oldCorrectPixels / sampleCount) * 100;
+                    const newPixelAccuracy = (newCorrectPixels / sampleCount) * 100;
+                    const pixelImprovement = newPixelAccuracy - oldPixelAccuracy;
+                    
+                    testResult.innerHTML = `
+                        <h3>图像像素测试结果</h3>
+                        <div>测试像素数量：${sampleCount}</div>
+                        <div>优化前像素准确率：<span class="old-accuracy">${oldPixelAccuracy.toFixed(1)}%</span></div>
+                        <div>优化后像素准确率：<span class="new-accuracy">${newPixelAccuracy.toFixed(1)}%</span></div>
+                        <div>像素准确率提升：<span class="improvement">${pixelImprovement.toFixed(1)}%</span></div>
+                    `;
+                };
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // 页面加载时自动运行测试
+        document.addEventListener('DOMContentLoaded', function() {
+            runColorAccuracyTest();
+        });
+    </script>
+</body>
+</html>
